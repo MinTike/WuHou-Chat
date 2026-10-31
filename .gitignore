@@ -1,18 +1,80 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# ============================================================
+# 密钥与本地数据 —— 绝不入库
+# 这些文件一旦进入版本库，密钥就是公开的：撤销成本极高
+# （所有用户令牌作废、托管私钥需轮换、WAF 密钥需重新签发）。
+# ============================================================
+.env
+.env.local
+*.env
+.env.bak*
+.env.*
+!.env.example
 
-# Other files and folders
-.settings/
+# 密钥与证书
+*.key
+*.pem
+*.pfx
+*.p12
+master.key
+wuhou_shield_master.key
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# 运行时数据：含托管私钥（data/escrow.json）、全局密钥（data/globalkey.bin）、
+# SQLite 库、用户上传的文件
+data/
+storage/
+*.db
+*.sqlite
+*.sqlite3
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# 日志里可能出现密钥/口令/命中原文
+*.log
+logs/
+
+# ============================================================
+# 核心后端 / 客户端 / 内部工具 —— 不属于本公开框架仓库
+# （本仓库只含 static/ 前端与根目录脚手架；这些目录一旦出现即为误放）
+# ============================================================
+app/
+clients/
+tools/
+wuhou-chat-framework/
+
+# ============================================================
+# 依赖与构建产物
+# ============================================================
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 工具运行产物
+tools/shots/
+*.tmp
+
+# 客户端构建产物
+clients/windows/dist/
+clients/windows/build/
+clients/windows/.venv/
+clients/android/.gradle/
+clients/android/build/
+clients/android/app/build/
+clients/android/local.properties
+clients/android/*.keystore
+*.jks
+*.keystore
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── 注意：以上为"从零新建"的规则。首次 git add 前务必执行 ──
+#   git status --porcelain | grep -E "\.env$|^data/|master\.key" 
+# 确认待提交清单里没有敏感文件，再提交。
