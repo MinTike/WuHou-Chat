@@ -1,0 +1,245 @@
+/* ============================================================
+   武侯Chat · 极光动态渐变背景主题（Aurora）
+   Copyright © 2026 左熙宇
+
+   仅在 html[data-theme="aurora"] 下显示。
+   设计要点：
+     · 多层「幕布」渐变带以 screen 混合模式叠加，模拟极光的加色发光
+     · 细密光束条纹 + 地平线辉光 + 星点 + 胶片噪点，补足真实感
+     · 所有动画只用 transform / opacity，不触发布局与重排
+     · 跟随指针做轻微视差（复用 motion.js 写入的 --px / --py）
+     · prefers-reduced-motion 下冻结为静态渐变，保留配色
+
+   说明：幕布的柔边依赖 filter: blur() + mix-blend-mode: screen，这是画面质感的关键，
+   不要为了"省资源"把它换成纯渐变（视觉会明显变生硬）。要省资源请走另外两条路：
+     1) 标签页切后台时 html.is-idle 冻结动画（见文件末尾）
+     2) 帧率过低时 html.perf-lite 退化为静态壁纸（由 motion.js 的看门狗自动切换）
+   ============================================================ */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -4;                /* 位于 .fx(-3) 之下，作为整站底图 */
+  pointer-events: none;
+  overflow: hidden;
+  display: none;
+  isolation: isolate;         /* 混合模式只在极光层内部生效，不污染页面 */
+
+  --aur-green: 62, 242, 160;   /* 极光绿 */
+  --aur-cyan: 53, 214, 255;    /* 冰蓝 */
+  --aur-violet: 155, 107, 255; /* 紫罗兰 */
+  --aur-rose: 255, 95, 158;    /* 玫红 */
+}
+
+html[data-theme="aurora"] .aurora { display: block; }
+
+/* 视差舞台：把幕布整体按指针做微小位移，制造景深 */
+.aurora__stage {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--px, 0) * 26px), calc(var(--py, 0) * 16px), 0);
+  transition: transform .8s cubic-bezier(.16, 1, .3, 1);
+}
+
+/* ---------------- 夜空底色 ---------------- */
+.aurora__sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(130% 92% at 50% 116%, rgba(var(--aur-green), .22), transparent 58%),
+    radial-gradient(96% 74% at 14% -12%, rgba(var(--aur-violet), .20), transparent 62%),
+    radial-gradient(88% 66% at 92% 4%, rgba(var(--aur-cyan), .14), transparent 60%),
+    linear-gradient(180deg, #04050d 0%, #060a18 38%, #050b16 72%, #04070f 100%);
+}
+
+/* ---------------- 极光幕布 ---------------- */
+.aurora__band {
+  position: absolute;
+  left: -35%;
+  width: 170%;
+  height: 44vh;
+  border-radius: 50%;
+  filter: blur(66px);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+
+/* 主幕：极光绿 → 冰蓝，位于画面上部 */
+.aurora__band--1 {
+  top: -8vh;
+  background: linear-gradient(94deg,
+    transparent 2%,
+    rgba(var(--aur-green), 0) 10%,
+    rgba(var(--aur-green), .92) 27%,
+    rgba(var(--aur-cyan), .58) 47%,
+    rgba(var(--aur-violet), .30) 63%,
+    transparent 84%);
+  opacity: .8;
+  animation: auroraBand1 34s ease-in-out infinite;
+}
+
+/* 副幕：紫罗兰 → 玫红，反向漂移，位于中下部 */
+.aurora__band--2 {
+  top: 26vh;
+  background: linear-gradient(86deg,
+    transparent 4%,
+    rgba(var(--aur-violet), .78) 24%,
+    rgba(var(--aur-rose), .46) 44%,
+    rgba(var(--aur-cyan), .26) 62%,
+    transparent 86%);
+  opacity: .62;
+  animation: auroraBand2 43s ease-in-out infinite;
+}
+
+/* 高空薄幕：冷蓝，缓慢呼吸 */
+.aurora__band--3 {
+  top: 8vh;
+  height: 34vh;
+  background: linear-gradient(100deg,
+    transparent 12%,
+    rgba(var(--aur-cyan), .52) 38%,
+    rgba(var(--aur-green), .34) 56%,
+    transparent 80%);
+  opacity: .5;
+  animation: auroraBand3 52s ease-in-out infinite;
+}
+
+/* 地平线辉光带：贴着底部的一抹极光绿 */
+.aurora__band--4 {
+  top: auto;
+  bottom: -26vh;
+  height: 52vh;
+  background: linear-gradient(0deg,
+    rgba(var(--aur-green), .58) 0%,
+    rgba(var(--aur-cyan), .30) 34%,
+    transparent 72%);
+  opacity: .68;
+  animation: auroraBand4 38s ease-in-out infinite;
+}
+
+@keyframes auroraBand1 {
+  0%, 100% { transform: translate3d(-2%, 0, 0) rotate(-2deg) scale(1, 1);        opacity: .70; }
+  34%      { transform: translate3d(5%, 3.5vh, 0) rotate(2.6deg) scale(1.05, 1.2); opacity: .94; }
+  67%      { transform: translate3d(-1%, -2vh, 0) rotate(-1.2deg) scale(1.08, .9); opacity: .58; }
+}
+@keyframes auroraBand2 {
+  0%, 100% { transform: translate3d(3%, 0, 0) rotate(1.6deg) scale(1, 1);         opacity: .52; }
+  40%      { transform: translate3d(-6%, -3vh, 0) rotate(-2.4deg) scale(1.06, 1.16); opacity: .78; }
+  72%      { transform: translate3d(1%, 2vh, 0) rotate(.8deg) scale(.94, .88);    opacity: .44; }
+}
+@keyframes auroraBand3 {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg) scale(1, 1);          opacity: .40; }
+  50%      { transform: translate3d(-7%, 4vh, 0) rotate(3.2deg) scale(1.12, 1.05); opacity: .66; }
+}
+@keyframes auroraBand4 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1, 1);       opacity: .60; }
+  45%      { transform: translate3d(-4%, -1.5vh, 0) scale(1.1, 1.22); opacity: .80; }
+}
+
+/* ---------------- 光束条纹 ----------------
+   细密的竖向纹理，被椭圆遮罩裁成一束，横向缓慢流动 */
+.aurora__beam {
+  position: absolute;
+  inset: -18% -12% -12%;
+  background: repeating-linear-gradient(101deg,
+    rgba(255, 255, 255, .13) 0 2px,
+    rgba(255, 255, 255, 0) 2px 15px,
+    rgba(var(--aur-green), .10) 15px 17px,
+    rgba(255, 255, 255, 0) 17px 34px);
+  -webkit-mask-image: radial-gradient(78% 58% at 48% 26%, #000 0%, rgba(0, 0, 0, .55) 42%, transparent 74%);
+          mask-image: radial-gradient(78% 58% at 48% 26%, #000 0%, rgba(0, 0, 0, .55) 42%, transparent 74%);
+  filter: blur(5px);
+  mix-blend-mode: screen;
+  opacity: .55;
+  animation: auroraBeam 26s linear infinite;
+}
+@keyframes auroraBeam {
+  0%   { transform: translate3d(0, 0, 0) skewX(0deg); }
+  50%  { transform: translate3d(6%, 0, 0) skewX(-2.5deg); }
+  100% { transform: translate3d(0, 0, 0) skewX(0deg); }
+}
+
+/* ---------------- 星点 ---------------- */
+.aurora__stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.6px 1.6px at 8% 14%,  rgba(255, 255, 255, .95), transparent 100%),
+    radial-gradient(1.2px 1.2px at 22% 6%,  rgba(255, 255, 255, .70), transparent 100%),
+    radial-gradient(1.8px 1.8px at 37% 19%, rgba(255, 255, 255, .85), transparent 100%),
+    radial-gradient(1.1px 1.1px at 51% 9%,  rgba(255, 255, 255, .60), transparent 100%),
+    radial-gradient(1.5px 1.5px at 64% 22%, rgba(255, 255, 255, .80), transparent 100%),
+    radial-gradient(1.2px 1.2px at 78% 11%, rgba(255, 255, 255, .68), transparent 100%),
+    radial-gradient(1.7px 1.7px at 89% 17%, rgba(255, 255, 255, .90), transparent 100%),
+    radial-gradient(1.1px 1.1px at 15% 31%, rgba(255, 255, 255, .55), transparent 100%),
+    radial-gradient(1.3px 1.3px at 44% 33%, rgba(255, 255, 255, .62), transparent 100%),
+    radial-gradient(1.5px 1.5px at 71% 30%, rgba(255, 255, 255, .72), transparent 100%),
+    radial-gradient(1.2px 1.2px at 93% 34%, rgba(255, 255, 255, .58), transparent 100%),
+    radial-gradient(1.4px 1.4px at 28% 44%, rgba(255, 255, 255, .50), transparent 100%);
+  opacity: .62;
+  animation: auroraTwinkle 7.5s ease-in-out infinite;
+}
+@keyframes auroraTwinkle {
+  0%, 100% { opacity: .58; }
+  50%      { opacity: .82; }
+}
+
+/* ---------------- 胶片噪点 ----------------
+   压掉大面积渐变的色带，让画面更像真实夜空 */
+.aurora__grain {
+  position: absolute;
+  inset: 0;
+  opacity: .055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* ---------------- 无障碍：降低动效 ---------------- */
+@media (prefers-reduced-motion: reduce) {
+  .aurora__stage { transition: none; transform: none; }
+  .aurora__band, .aurora__beam, .aurora__stars { animation: none !important; }
+  .aurora__band { transform: none; }
+  .aurora__band--2, .aurora__band--3 { opacity: .5; }
+}
+
+/* ---------------- 让极光透出来 ----------------
+   premium.css 里 .app::before 有一层不透明的全屏渐变（--bg → --bg-2），
+   会把负 z-index 的极光整层盖死。极光主题下只保留点缀光晕，
+   并把三块大面板调透，让极光在毛玻璃后面流动。 */
+html[data-theme="aurora"] .app::before {
+  background:
+    radial-gradient(900px 620px at 8% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%),
+    radial-gradient(760px 560px at 96% 108%, color-mix(in srgb, var(--accent-2) 11%, transparent), transparent 60%);
+}
+html[data-theme="aurora"] .side {
+  background: color-mix(in srgb, var(--bg-2) 58%, transparent);
+}
+html[data-theme="aurora"] .rail {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--bg-3) 66%, transparent),
+    color-mix(in srgb, var(--bg-2) 72%, transparent));
+}
+html[data-theme="aurora"] .chat__head,
+html[data-theme="aurora"] .main__head {
+  background: color-mix(in srgb, var(--bg-2) 52%, transparent);
+}
+html[data-theme="aurora"] .boot { background: transparent; }
+
+/* 窄屏：幕布适当收窄，避免糊成一片 */
+@media (max-width: 720px) {
+  .aurora__band { filter: blur(48px); height: 38vh; }
+  .aurora__beam { opacity: .38; }
+}
+
+/* ---------------- 省电（不改变正常观感，只在看不见/跑不动时生效）----------------
+   html.is-idle：标签页切到后台 —— 冻结常驻动画，不占 GPU
+   html.perf-lite：帧率看门狗连续两窗判定过低 —— 退化为静态壁纸（配色保留） */
+html.is-idle #aurora *,
+html.is-idle #fx * { animation-play-state: paused !important; }
+
+html.perf-lite #aurora *, html.perf-lite #fx * { animation: none !important; }
+html.perf-lite .aurora__stage { transition: none; transform: none; }
+html.perf-lite .aurora__band { opacity: .62; }
+html.perf-lite .aurora__band--3 { display: none; }
+html.perf-lite .fx { display: none; }

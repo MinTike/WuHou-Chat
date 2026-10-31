@@ -1,0 +1,250 @@
+/* ============================================================
+   布局：认证页 / 应用骨架 / 侧栏 / 响应式
+   ============================================================ */
+
+/* ---------------- 认证 ----------------
+   品牌内容铺在左边当舞台；登录 / 注册是两张各自独立、可自由拖动的卡片，
+   不再固定在同一块面板里靠页签切换。 */
+.auth { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; overflow: hidden; }
+
+.auth__desk { position: absolute; inset: 0; pointer-events: none; perspective: 1400px; perspective-origin: 50% 42%; }
+
+.auth-card {
+  position: absolute; left: var(--x, 50%); top: var(--y, 50%);
+  width: min(430px, calc(100vw - 32px));
+  /* left/top 给出静态位置（配合 -50% 的 margin 实现居中），--dx/--dy 只承担拖拽位移。
+     3D 旋转消费 motion.js 写入的 --tilt-rx/--tilt-ry（数据来自指针位置，轻量级）。 */
+  margin-left: calc(min(430px, calc(100vw - 32px)) / -2);
+  margin-top: -6px;
+  transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0) translateY(-50%)
+             rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
+  transform-style: preserve-3d;
+  pointer-events: auto;
+  display: flex; flex-direction: column;
+  border-radius: 22px; overflow: visible;
+  background: var(--glass); border: 1px solid var(--line-2);
+  backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: var(--shadow-3);
+  animation: cardIn .42s var(--ease-out) both;
+  transition: box-shadow .25s var(--ease), opacity .22s var(--ease), transform .22s var(--ease-out);
+  z-index: 2;
+}
+.auth-card.is-front { z-index: 4; box-shadow: var(--shadow-3), 0 18px 48px rgba(0, 0, 0, .34); }
+.auth-card.is-dragging { transition: none; }
+.auth-card[hidden] { display: none; }
+/* 退场：cardIn 的 both 填充模式会一直压住 opacity/transform 的 transition，
+   导致旧卡"啪"地消失。这里用专门的 cardOut 动画覆盖（同属性动画后声明者胜出），
+   旧的卡片往下沉一点再淡出，与新卡的上浮形成方向一致的接力。 */
+.auth-card.is-hiding { animation: cardOut .24s cubic-bezier(.4, 0, 1, 1) both; z-index: 1; }
+
+.auth-card__bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px 9px 13px; cursor: grab; user-select: none;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.auth-card__bar:active { cursor: grabbing; }
+.auth-card__grip { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; opacity: .5; }
+.auth-card__grip i { display: block; width: 14px; height: 2px; border-radius: 2px; background: currentColor; }
+.auth-card__title {
+  display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0;
+  font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); letter-spacing: .3px;
+}
+.auth-card__title img { border-radius: 33%; }
+.auth-card__title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-card__acts { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.auth-card__btn {
+  height: 26px; padding: 0 9px; border-radius: 9px; font-size: var(--fs-xs);
+  color: var(--muted); background: var(--panel-2); border: 1px solid var(--line);
+  transition: color .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+}
+.auth-card__btn:hover { color: var(--text); border-color: var(--line-2); background: var(--panel); }
+.auth-card__btn--go {
+  color: var(--accent); border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.auth-card__btn--go:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+.auth-card__body {
+  padding: 20px 24px 18px;
+  /* 矮视口 + 展开选填区时卡片可能高过视口：让卡片内部自己滚，
+     否则底部按钮会被裁掉、和页脚版权条叠在一起 */
+  overflow: auto; overscroll-behavior: contain;
+  max-height: calc(100vh - 118px);
+  scrollbar-width: thin;
+}
+/* 认证页左下角已有 .auth__foot 版权，全局固定版权条会和卡片底部提示叠在一起 */
+body:has(#auth:not([hidden])) .copyright { display: none; }
+
+
+/* 品牌展示栏（认证页舞台） */
+.auth__showcase { display: flex; flex-direction: column; gap: 14px; }
+.auth__showcase--hero {
+  position: absolute; left: clamp(24px, 7vw, 96px); top: 50%; transform: translateY(-50%);
+  width: min(430px, 42vw); pointer-events: none;
+}
+.auth__logo {
+  width: 62px; height: 62px; border-radius: 20px; display: grid; place-items: center;
+  background: linear-gradient(140deg, var(--accent), var(--accent-2));
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 45%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, .3);
+  animation: floatY 4s ease-in-out infinite;
+}
+.auth__title { font-size: 38px; font-weight: 800; letter-spacing: 3px; line-height: 1.1; }
+.auth__lede { font-size: var(--fs-md); color: var(--text-2); line-height: 1.75; max-width: 380px; }
+.auth__feats { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.auth__feats li { display: flex; gap: 12px; align-items: flex-start; }
+.auth__feat-ico {
+  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+  color: var(--accent); background: var(--panel); border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.auth__feats b { display: block; font-size: var(--fs-md); font-weight: 650; letter-spacing: .2px; }
+.auth__feats i { display: block; font-style: normal; font-size: var(--fs-xs); color: var(--muted); margin-top: 3px; line-height: 1.6; }
+.auth__foot { margin-top: 6px; font-size: var(--fs-xs); color: var(--muted); letter-spacing: .5px; }
+
+/* 窄屏：舞台收起，卡片回到普通居中排版（拖拽保留，但初始位置由布局决定） */
+@media (max-width: 900px) {
+  .auth__showcase--hero { display: none; }
+  .auth { overflow: auto; }
+  .auth__desk { position: static; inset: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; }
+  .auth-card { position: relative; left: auto; top: auto; margin: 0;
+    transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0);
+    animation: fadeUp .38s var(--ease-out) both; }
+}
+.auth__bg {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    radial-gradient(760px 460px at 18% 12%, rgba(124, 92, 255, .38), transparent 62%),
+    radial-gradient(680px 420px at 88% 88%, rgba(37, 217, 198, .26), transparent 60%);
+  filter: blur(6px);
+}
+.auth__panel {
+  width: min(452px, 100%);
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: 26px 28px 16px;
+  box-shadow: var(--shadow-3);
+  animation: popIn .5s var(--ease-out) both;
+}
+.auth__brand { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.auth__brand h1 { font-size: 23px; font-weight: 800; letter-spacing: 1px; }
+.auth__brand p { font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; }
+.brand-mark {
+  width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+  font-size: 22px; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 10px 24px rgba(124, 92, 255, .38);
+}
+.auth__tip { font-size: var(--fs-xs); color: var(--muted); text-align: center; margin-top: 10px; }
+
+/* ---------------- 应用骨架 ---------------- */
+.app {
+  position: fixed; inset: 0; display: grid;
+  grid-template-columns: var(--rail-w) var(--side-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  animation: fadeIn .35s var(--ease) both;
+}
+
+/* 左侧导航轨 */
+.rail {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 0 12px; gap: 8px;
+  background: var(--bg-2); border-right: 1px solid var(--line);
+}
+.rail__logo {
+  width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
+  font-weight: 800; color: #fff; letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 8px 20px rgba(124, 92, 255, .4);
+}
+.rail__top { margin-bottom: 8px; }
+.rail__nav { display: flex; flex-direction: column; gap: 6px; flex: 1; width: 100%; align-items: center; }
+.rail__bottom { display: flex; flex-direction: column; gap: 6px; }
+.rail__btn {
+  width: 44px; height: 44px; border-radius: 14px; font-size: 18px;
+  display: grid; place-items: center; color: var(--text-2);
+  transition: all var(--dur) var(--ease); position: relative;
+}
+.rail__btn:hover { background: var(--panel-2); color: var(--text); }
+.rail__btn.is-active {
+  background: var(--accent-soft); color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.rail__btn.is-active::before {
+  content: ""; position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 99px; background: var(--accent);
+}
+.rail__btn .dot {
+  position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 99px;
+  background: var(--danger); box-shadow: 0 0 0 2px var(--bg-2);
+}
+
+/* 中间列表栏 */
+.side {
+  display: flex; flex-direction: column; min-width: 0;
+  background: var(--bg-2); border-right: 1px solid var(--line);
+}
+.side__head {
+  display: flex; gap: 10px; align-items: center; padding: 14px 14px 10px;
+}
+.side__body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 8px 14px; }
+
+/* 主区 */
+.main { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+.main__stage { flex: 1; min-height: 0; position: relative; display: flex; }
+
+/* 视图容器 */
+.view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; animation: fadeUp .35s var(--ease-out) both; }
+.view__head {
+  height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), transparent);
+  backdrop-filter: blur(8px);
+}
+.view__title { font-size: var(--fs-lg); font-weight: 700; letter-spacing: .3px; }
+.view__sub { font-size: var(--fs-xs); color: var(--muted); }
+.view__body { flex: 1; min-height: 0; overflow: auto; }
+
+/* 空态 */
+.empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; color: var(--muted); padding: 40px; text-align: center;
+}
+.empty__icon { font-size: 46px; opacity: .55; animation: floatY 3.4s ease-in-out infinite; }
+.empty__title { font-size: var(--fs-lg); color: var(--text-2); font-weight: 600; }
+.empty__sub { font-size: var(--fs-sm); max-width: 340px; line-height: 1.6; }
+
+/* ---------------- 响应式 ---------------- */
+@media (max-width: 1180px) {
+  :root { --side-w: 306px; }
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: var(--rail-w) 1fr; }
+  .side {
+    position: absolute; z-index: 20; top: 0; bottom: 0; left: var(--rail-w);
+    width: min(84vw, 340px);
+    transform: translateX(-102%); transition: transform .32s var(--ease-out);
+    box-shadow: var(--shadow-3);
+  }
+  .side.is-open { transform: none; }
+  .side::after { content: ""; }
+  .main { grid-column: 2; }
+}
+@media (max-width: 620px) {
+  .app { grid-template-columns: 1fr; }
+  .rail {
+    position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; top: auto;
+    flex-direction: row; justify-content: space-around; height: 58px;
+    border-right: none; border-top: 1px solid var(--line); padding: 6px 4px;
+    background: var(--glass); backdrop-filter: blur(18px);
+  }
+  .rail__top, .rail__bottom { display: none; }
+  .rail__nav { flex-direction: row; justify-content: space-around; }
+  .rail__btn.is-active::before { display: none; }
+  .side { top: 0; bottom: 58px; left: 0; width: min(88vw, 340px); }
+  .main { padding-bottom: 58px; }
+  .copyright { display: none; }
+  .auth__panel { padding: 22px 18px 18px; border-radius: var(--r-lg); }
+}

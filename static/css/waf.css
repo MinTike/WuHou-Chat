@@ -1,0 +1,445 @@
+/* ============================================================
+   WAF 独立控制台 —— 专属视觉层
+   与聊天界面 / 管理员后台是三套不同的界面系统，这里不复用它们的布局类，
+   只共用设计令牌（--bg / --panel / --text …），因此跟随站点主题（深/浅/极光）。
+
+   风格：安全运营中心 —— 玻璃侧栏、状态色光感、数据可读性优先。
+   Copyright © 2026 左熙宇
+   ============================================================ */
+
+.waf {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 620px at 10% -12%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
+    radial-gradient(980px 540px at 104% 112%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+/* ---------------- 侧栏 ---------------- */
+.waf__side {
+  flex: 0 0 252px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px 14px 14px;
+  background: var(--glass);
+  border-right: 1px solid var(--line);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.waf__brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 8px 20px;
+}
+.waf__logo {
+  width: 40px; height: 40px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  display: grid; place-items: center;
+  font-size: 17px; font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--accent) 60%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, .26);
+}
+.waf__brand-t { font-size: 14px; font-weight: 800; line-height: 1.25; letter-spacing: .3px; }
+.waf__brand-s { font-size: 10.5px; color: var(--muted); margin-top: 3px; letter-spacing: .4px; }
+
+.waf__nav { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; min-height: 0; }
+.waf__nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 12px 7px 10px;
+  border: 0; border-radius: 12px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13.5px; font-family: inherit; text-align: left;
+  cursor: pointer;
+  transition: background .22s var(--ease), color .22s var(--ease), transform .22s var(--ease);
+}
+.waf__nav-ico {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; flex: 0 0 auto;
+  border-radius: 9px; color: var(--muted);
+  transition: background .22s var(--ease), color .22s var(--ease), box-shadow .22s var(--ease);
+}
+.waf__nav-item:hover { background: var(--panel); color: var(--text); }
+.waf__nav-item:hover .waf__nav-ico { color: var(--text); background: var(--panel-2); }
+.waf__nav-item.is-active {
+  background: linear-gradient(120deg, var(--accent-soft), transparent 160%);
+  color: var(--text);
+  font-weight: 700;
+}
+/* 活动项左侧的品牌色指示条，带一点辉光 */
+.waf__nav-item.is-active::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.waf__nav-item.is-active .waf__nav-ico {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-2) 42%, var(--accent)));
+  box-shadow: 0 5px 14px -5px var(--accent);
+}
+.waf__nav-count {
+  margin-left: auto;
+  min-width: 20px; padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
+  font-size: 10.5px; font-weight: 800; text-align: center;
+}
+
+.waf__foot {
+  margin-top: auto; padding: 12px 10px 4px;
+  border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--muted); line-height: 1.7;
+}
+.waf__dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 6px; vertical-align: 1px;
+  box-shadow: 0 0 8px currentColor;
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+/* ---------------- 主区 ---------------- */
+.waf__main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.waf__top {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 12px;
+  padding: 15px 26px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+}
+/* 顶栏当前登录管理员标识 */
+.waf-top__admin {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-3) 60%, transparent);
+}
+@media (max-width: 900px) {
+  .waf-top__admin { display: none; }
+}
+.waf__top::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent 10%,
+    color-mix(in srgb, var(--accent) 32%, transparent) 50%, transparent 90%);
+}
+.waf__top-t { font-size: 17px; font-weight: 800; letter-spacing: .3px; }
+.waf__top-s { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: .3px; }
+
+.waf__body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 22px 26px 44px;
+  scrollbar-width: thin;
+}
+.waf__body::-webkit-scrollbar { width: 8px; }
+.waf__body::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; }
+
+/* 入场动效：整页淡入 + 直生子块轻微阶梯延迟，切页不生硬 */
+.waf__page { animation: wafIn .34s var(--ease-out) both; }
+.waf__page > * { animation: wafIn .42s var(--ease-out) backwards; }
+.waf__page > *:nth-child(1) { animation-delay: 0ms; }
+.waf__page > *:nth-child(2) { animation-delay: 40ms; }
+.waf__page > *:nth-child(3) { animation-delay: 80ms; }
+.waf__page > *:nth-child(4) { animation-delay: 120ms; }
+.waf__page > *:nth-child(5) { animation-delay: 160ms; }
+.waf__page > *:nth-child(n+6) { animation-delay: 200ms; }
+@keyframes wafIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .waf__page, .waf__page > * { animation: none; } }
+
+/* ---------------- 通用块 ---------------- */
+.waf-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .024), transparent 50%), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 15px 17px;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.waf-card:hover { border-color: var(--line-2); }
+
+.waf-grid { display: grid; gap: 14px; }
+.waf-grid--6 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.waf-grid--4 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.waf-grid--2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* 区块标题：品牌色小竖条 + 大字距 + 右侧渐隐线 */
+.waf-sec {
+  display: flex; align-items: center; gap: 9px;
+  margin: 26px 0 12px;
+  font-size: 11.5px; font-weight: 800; letter-spacing: 1.6px;
+  color: var(--muted);
+}
+.waf-sec::before {
+  content: ''; width: 4px; height: 14px; border-radius: 2px; flex: 0 0 auto;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.waf-sec::after { content: ''; flex: 1 1 auto; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.waf__page > .waf-sec:first-child { margin-top: 0; }
+
+/* 状态 Hero：状态色从左侧光晕里透出来，不用大色块糊脸 */
+.waf-hero {
+  --hero-c: var(--ok);
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px 24px 22px 26px;
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--hero-c) 26%, var(--line));
+  background:
+    radial-gradient(560px 220% at -2% 50%, color-mix(in srgb, var(--hero-c) 14%, transparent), transparent 68%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 55%),
+    var(--panel);
+  position: relative; overflow: hidden;
+}
+.waf-hero.is-warn { --hero-c: var(--warn); }
+.waf-hero.is-bad { --hero-c: var(--danger); }
+.waf-hero::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+  background: linear-gradient(180deg, var(--hero-c), color-mix(in srgb, var(--hero-c) 40%, transparent));
+}
+.waf-hero::after {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--hero-c) 38%, transparent), transparent);
+}
+.waf-hero__ico {
+  width: 52px; height: 52px; flex: 0 0 auto;
+  border-radius: 16px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--hero-c) 15%, transparent);
+  color: var(--hero-c);
+  border: 1px solid color-mix(in srgb, var(--hero-c) 30%, transparent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--hero-c) 20%, transparent);
+}
+.waf-hero__t { font-size: 18px; font-weight: 800; letter-spacing: .3px; }
+.waf-hero__s { font-size: 12.5px; color: var(--text-2); margin-top: 5px; line-height: 1.7; }
+
+/* 指标卡：渐变数字 + 顶部高光线 + 悬浮抬升 */
+.waf-metric { position: relative; overflow: hidden; text-align: left; }
+.waf-metric::before {
+  content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent);
+}
+.waf-metric:hover {
+  border-color: var(--line-2);
+  box-shadow: 0 16px 36px -18px rgba(0, 0, 0, .6);
+}
+.waf-metric__n {
+  font-size: 27px; font-weight: 800; line-height: 1.12;
+  font-variant-numeric: tabular-nums; letter-spacing: -.5px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.waf-metric__k { font-size: 11.5px; color: var(--muted); margin-top: 5px; font-weight: 600; letter-spacing: .3px; }
+.waf-metric__x { font-size: 11px; margin-top: 7px; color: var(--text-2); }
+
+/* 趋势条：渐变柱 + 虚线网格 + 悬浮辉光 */
+.waf-bars {
+  display: flex; align-items: flex-end; gap: 3px; height: 108px; padding-top: 8px;
+  border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(180deg,
+    transparent 0 25px, color-mix(in srgb, var(--line) 60%, transparent) 25px 26px);
+}
+.waf-bars__b {
+  flex: 1 1 0; min-width: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent-2) 50%, transparent));
+  transition: height .5s var(--ease-out), filter var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.waf-bars__b:hover {
+  filter: brightness(1.35);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.waf-bars__axis {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--muted); margin-top: 7px; letter-spacing: .4px;
+}
+
+/* 分布条 */
+.waf-dist { display: flex; flex-direction: column; gap: 9px; }
+.waf-dist__row { display: flex; align-items: center; gap: 11px; font-size: 12.5px; }
+.waf-dist__name { flex: 0 0 126px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.waf-dist__track { flex: 1 1 auto; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.waf-dist__fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: width .5s var(--ease-out);
+}
+.waf-dist__n { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: 800; }
+
+/* 列表 */
+.waf-list { display: flex; flex-direction: column; gap: 9px; }
+.waf-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .018), transparent 60%), var(--panel);
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.waf-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: color-mix(in srgb, var(--accent) 4%, var(--panel));
+}
+.waf-row__main { flex: 1 1 auto; min-width: 0; }
+.waf-row__t { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.waf-row__s { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.65; word-break: break-all; }
+.waf-row__side { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+
+.waf-mono { font-family: ui-monospace, Consolas, "SF Mono", Menlo, monospace; font-size: 12.5px; }
+
+/* 徽标：加状态点，辨识快于读字 */
+.waf-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: .2px;
+  background: var(--panel-2); color: var(--text-2);
+}
+.waf-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+.waf-badge--critical { background: color-mix(in srgb, #ff4d6d 16%, transparent); color: #ff4d6d; }
+.waf-badge--high { background: color-mix(in srgb, #ff8a3d 16%, transparent); color: #ff8a3d; }
+.waf-badge--medium { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.waf-badge--low { background: var(--panel-2); color: var(--muted); }
+.waf-badge--ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+
+/* 表单 */
+.waf-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.waf-field__l { font-size: 11.5px; color: var(--muted); font-weight: 700; letter-spacing: .3px; }
+.waf-input, .waf-select, .waf-textarea {
+  width: 100%; box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px; font-family: inherit;
+  outline: none;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.waf-input:focus, .waf-select:focus, .waf-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.waf-textarea { resize: vertical; min-height: 96px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.waf-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+
+/* 按钮 */
+.waf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  color: var(--text-2);
+  font-size: 12.5px; font-weight: 700; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), opacity var(--dur);
+}
+.waf-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  color: var(--text);
+}
+.waf-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.waf-btn--primary {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-2) 45%, var(--accent)));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 8px 22px -10px var(--accent);
+}
+.waf-btn--primary:hover { filter: brightness(1.12); box-shadow: 0 12px 28px -10px var(--accent); color: #fff; border-color: transparent; }
+.waf-btn--danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+.waf-btn--danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.waf-btn--sm { padding: 6px 11px; font-size: 11.5px; }
+
+/* 空态 / 加载 / 错误 */
+.waf-empty {
+  display: grid; place-items: center; gap: 8px;
+  padding: 52px 20px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  color: var(--muted); font-size: 12.5px; text-align: center;
+  background: color-mix(in srgb, var(--panel) 40%, transparent);
+}
+.waf-note {
+  padding: 12px 14px; border-radius: var(--r-sm);
+  background: var(--panel); border: 1px solid var(--line);
+  font-size: 11.5px; color: var(--muted); line-height: 1.8;
+}
+.waf-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--line-2); border-top-color: var(--accent);
+  animation: wafSpin .7s linear infinite;
+}
+@keyframes wafSpin { to { transform: rotate(360deg); } }
+.waf-center { display: grid; place-items: center; padding: 40px; }
+
+/* 开关 */
+.waf-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+.waf-switch input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+/* 代码/结果块 */
+.waf-code {
+  padding: 12px 14px; border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bg-3) 72%, transparent);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px; line-height: 1.75; white-space: pre-wrap; word-break: break-all;
+  max-height: 300px; overflow: auto;
+}
+
+/* ---------------- 响应式 ---------------- */
+@media (max-width: 1000px) {
+  .waf { flex-direction: column; }
+  .waf__side {
+    flex: 0 0 auto;
+    flex-direction: row; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-right: 0; border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .waf__brand { padding: 0 4px 0 0; }
+  .waf__nav { flex-direction: row; gap: 6px; }
+  .waf__nav-item { white-space: nowrap; }
+  .waf__nav-item.is-active::before { left: 8px; right: 8px; top: auto; bottom: 0; width: auto; height: 3px; }
+  .waf__foot { display: none; }
+  .waf__top { padding: 12px 16px; }
+  .waf__body { padding: 16px 16px 36px; }
+}
+@media (max-width: 640px) {
+  .waf__brand-t { display: none; }
+  .waf__brand-s { display: none; }
+  /* 窄屏只留图标与计数，隐藏文字标签（图标是 .waf__nav-ico，别误伤） */
+  .waf__nav-item span:not(.waf__nav-ico):not(.waf__nav-count) { display: none; }
+  .waf__nav-item { padding: 6px 8px; }
+  .waf-grid--6 { grid-template-columns: repeat(2, 1fr); }
+  .waf-hero { padding: 18px; gap: 14px; }
+  .waf-hero__ico { width: 44px; height: 44px; border-radius: 14px; }
+}

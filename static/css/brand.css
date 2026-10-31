@@ -1,0 +1,401 @@
+/* ============================================================
+   武侯Chat · 登录/注册品牌页专用样式
+   Copyright © 2026 左熙宇
+   设计体系：glassmorphism + 极光渐变 + 轻量动效
+   说明：只增强 .auth 品牌区与认证卡片，不触碰应用内其它模块。
+   ============================================================ */
+
+/* ============================================================
+   1. 品牌 Logo 光环层
+   ============================================================ */
+.auth__logo {
+  position: relative;
+  z-index: 0;
+}
+/* 光环 1：紧贴 logo 的呼吸光晕 */
+.auth__logo::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  z-index: -1;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 62%),
+    radial-gradient(circle at 70% 72%, color-mix(in srgb, var(--accent-2) 45%, transparent), transparent 60%);
+  filter: blur(16px);
+  opacity: .55;
+  animation: brandHalo 5.2s ease-in-out infinite;
+}
+/* 光环 2：外圈细线，缓慢旋转的虚线圆环 */
+.auth__logo::after {
+  content: "";
+  position: absolute;
+  inset: -26px;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
+  opacity: .5;
+  animation: brandSpin 34s linear infinite;
+}
+@keyframes brandHalo {
+  0%, 100% { opacity: .45; transform: scale(.96); }
+  50%      { opacity: .8;  transform: scale(1.06); }
+}
+@keyframes brandSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   2. 品牌标题：渐变文字 + 底部装饰线
+   ============================================================ */
+.auth__title {
+  position: relative;
+  background: linear-gradient(92deg,
+    var(--text) 0%,
+    var(--accent) 48%,
+    var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  width: fit-content;
+  padding-bottom: 10px;
+}
+/* 标题下的渐变装饰线 */
+.auth__title::after {
+  content: "";
+  position: absolute;
+  left: 2px; bottom: 0;
+  width: 64px; height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* ============================================================
+   3. 品牌标语（lede）装饰引线
+   ============================================================ */
+.auth__lede {
+  position: relative;
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   4. 特性列表：hover 微动效 + 图标底色渐变
+   ============================================================ */
+.auth__feats li {
+  transition: transform .22s var(--ease), background .22s var(--ease);
+  border-radius: 14px;
+  padding: 6px 8px 6px 6px;
+  margin: 0 -8px;
+}
+.auth__feats li:hover {
+  transform: translateX(5px);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+.auth__feat-ico {
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), color .25s var(--ease);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--accent) 18%, var(--panel)), var(--panel));
+}
+.auth__feats li:hover .auth__feat-ico {
+  transform: scale(1.08) rotate(-4deg);
+  color: var(--accent-2);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 28%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+/* ============================================================
+   5. 品牌信任徽章条
+   ============================================================ */
+.auth__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.auth__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  transition: color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.auth__badge:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-2px);
+}
+.auth__badge svg { flex: 0 0 auto; }
+
+/* ============================================================
+   6. 认证卡片：顶部品牌渐变色条 + 底部安全提示条
+   ============================================================ */
+.auth-card {
+  position: relative;
+}
+/* 顶部渐变细条：品牌识别 */
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 6;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+  background-size: 200% 100%;
+  animation: brandBarSlide 6s linear infinite;
+  opacity: .9;
+}
+@keyframes brandBarSlide {
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 卡片标题栏 logo 加一圈轻描边 */
+.auth-card__title img {
+  border-radius: 33%;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 35%, transparent),
+              0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* 安全提示条：登录/注册卡底部 */
+.auth__tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 14px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.auth__tip svg { flex: 0 0 auto; opacity: .8; }
+
+/* ============================================================
+   7. 主按钮：渐变流光描边（品牌化）
+   ============================================================ */
+.auth-card .btn--primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* 按钮内部顶部高光 */
+.auth-card .btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg,
+    transparent 28%,
+    rgba(255, 255, 255, .22) 48%,
+    transparent 68%);
+  background-size: 220% 100%;
+  animation: brandBtnSheen 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes brandBtnSheen {
+  0%, 60%   { background-position: 120% 0; }
+  100%      { background-position: -80% 0; }
+}
+
+/* ============================================================
+   8. 登录页漂浮光点层（仅认证页显示，轻量、纯 CSS）
+   ============================================================ */
+.auth__particles {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.auth__particles i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--accent-2) 85%, #fff),
+    color-mix(in srgb, var(--accent-2) 0%, transparent) 70%);
+  opacity: 0;
+  animation: brandParticle 12s linear infinite;
+}
+.auth__particles i:nth-child(1) { left: 6%;  top: 22%; width: 5px;  height: 5px;  animation-delay: 0s; }
+.auth__particles i:nth-child(2) { left: 16%; top: 68%; width: 3px;  height: 3px;  animation-delay: 2.4s; }
+.auth__particles i:nth-child(3) { left: 28%; top: 12%; width: 4px;  height: 4px;  animation-delay: 4.1s; }
+.auth__particles i:nth-child(4) { left: 43%; top: 80%; width: 6px;  height: 6px;  animation-delay: 1.2s; }
+.auth__particles i:nth-child(5) { left: 58%; top: 30%; width: 3px;  height: 3px;  animation-delay: 5.6s; }
+.auth__particles i:nth-child(6) { left: 72%; top: 62%; width: 5px;  height: 5px;  animation-delay: 3.3s; }
+.auth__particles i:nth-child(7) { left: 86%; top: 18%; width: 4px;  height: 4px;  animation-delay: 7s; }
+.auth__particles i:nth-child(8) { left: 93%; top: 76%; width: 3px;  height: 3px;  animation-delay: 8.5s; }
+@keyframes brandParticle {
+  0%   { transform: translateY(12px) scale(.6);  opacity: 0; }
+  12%  { opacity: .75; }
+  55%  { transform: translateY(-28px) scale(1); opacity: .45; }
+  88%  { opacity: .1; }
+  100% { transform: translateY(-72px) scale(.4); opacity: 0; }
+}
+
+/* ============================================================
+   9. 移动端精简品牌区（卡片上方）
+   ============================================================ */
+.auth__mobile-brand {
+  display: none;
+}
+@media (max-width: 900px) {
+  .auth__mobile-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 18px;
+    text-align: center;
+  }
+  .auth__mobile-brand .auth__logo {
+    width: 58px; height: 58px;
+    border-radius: 18px;
+  }
+  .auth__mobile-brand .auth__logo img {
+    width: 58px; height: 58px;
+    border-radius: 18px;
+  }
+  .auth__mobile-brand .auth__logo::before { inset: -10px; border-radius: 22px; }
+  .auth__mobile-brand .auth__logo::after  { inset: -22px; }
+  .auth__mobile-brand h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    background: linear-gradient(92deg, var(--text), var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .auth__mobile-brand p {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    max-width: 260px;
+    line-height: 1.6;
+  }
+  /* 移动端卡片上方的色条保留，但去掉会干扰滚动的固定光环动画 */
+  html.is-mobile .auth__particles { display: none; }
+}
+
+/* ============================================================
+   10.5 玻璃拟态增强：内高光描边 + 顶部反光条 + 外发光
+   说明：只强化「厚玻璃」观感，不引入新 DOM，全部用伪元素与阴影完成。
+   ============================================================ */
+/* 卡片内高光描边：贴圆角内侧的一圈细亮线 + 底部品牌色辉光，强化玻璃厚度 */
+.auth-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 22px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .55),
+    inset 0 0 0 1px color-mix(in srgb, #fff 16%, transparent),
+    inset 0 -26px 64px -34px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+/* 顶部色条改为带玻璃高光的圆角细线（配合下方去掉 overflow:hidden） */
+.auth-card::before {
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 62%, transparent);
+}
+/* 玻璃面更强：提高模糊与饱和，并叠加柔和外发光，让卡片像浮在光雾上 */
+.auth-card {
+  backdrop-filter: blur(34px) saturate(166%);
+  -webkit-backdrop-filter: blur(34px) saturate(166%);
+  box-shadow:
+    var(--shadow-3),
+    0 0 0 1px color-mix(in srgb, #fff 8%, transparent),
+    0 26px 76px -30px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* ============================================================
+   10.6 canvas 粒子网络层（位于背景与卡片之间）
+   z 轴：.auth__bg(-1) < .auth-canvas(0) < 粒子/舞台/卡片(1+)，
+   卡片半透明玻璃会把背后的粒子虚化成柔光散景（bokeh），是玻璃拟态灵魂。
+   ============================================================ */
+.auth-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* 确保背景之上的各层都高于画布，避免画布盖住品牌文字或卡片。
+   注意：只补 z-index，绝不能重写 position，否则会覆盖 layout.css 里
+   品牌区原有的 position:absolute 左定位，导致它掉回网格中央。 */
+.auth__showcase--hero { z-index: 1; }
+.auth__desk { z-index: 1; }
+.auth__particles { z-index: 1; }
+
+/* ============================================================
+   10.7 真实 3D 分层（仅宽屏非移动端）
+   依赖 .auth__desk 的 perspective（layout.css）与 .auth-card 的
+   transform-style: preserve-3d（layout.css）。子元素用 translateZ 浮起，
+   卡片随指针倾斜时产生视差纵深。窄屏 / 触屏回落平面（下方 media 已禁用）。
+   ============================================================ */
+@media (min-width: 901px) {
+  html:not(.is-mobile) .auth-card__bar  { transform: translateZ(34px); }
+  html:not(.is-mobile) .auth-card__title { transform: translateZ(28px); }
+  html:not(.is-mobile) .auth-card .btn--primary { transform: translateZ(26px); }
+  html:not(.is-mobile) .auth-card__body .auth__tip { transform: translateZ(18px); }
+}
+
+/* ============================================================
+   10. 无障碍：降低动效
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .auth__logo::before,
+  .auth__logo::after,
+  .auth__title::after,
+  .auth-card::before,
+  .auth-card .btn--primary::after,
+  .auth__particles i {
+    animation: none !important;
+  }
+  /* 关闭玻璃增强与 3D 分层，避免任何纵深位移 */
+  .auth-canvas { display: none !important; }
+  .auth-card::after { box-shadow: none !important; }
+  .auth-card::before { box-shadow: none !important; }
+  .auth-card__bar,
+  .auth-card__title,
+  .auth-card .btn--primary,
+  .auth-card__body .auth__tip { transform: none !important; }
+  .auth__feats li:hover { transform: none; }
+  .auth__badge:hover { transform: none; }
+}
+
+/* ============================================================
+   11. 性能降级：帧率过低时冻结登录页装饰动画
+   ============================================================ */
+html.perf-lite .auth__logo::before,
+html.perf-lite .auth__logo::after,
+html.perf-lite .auth-card::before,
+html.perf-lite .auth-card .btn--primary::after,
+html.perf-lite .auth__particles i {
+  animation: none !important;
+}
+html.perf-lite .auth__particles { display: none; }
+/* 降级模式同样冻结画布与 3D 分层，保住低端机帧率 */
+html.perf-lite .auth-canvas { display: none !important; }
+html.perf-lite .auth-card::after { box-shadow: none !important; }
+html.perf-lite .auth-card__bar,
+html.perf-lite .auth-card__title,
+html.perf-lite .auth-card .btn--primary,
+html.perf-lite .auth-card__body .auth__tip { transform: none !important; }

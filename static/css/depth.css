@@ -1,0 +1,367 @@
+/* ============================================================
+   武侯Chat · 3D 深度 / 光影 / 动效强化层
+   加载顺序在 premium.css 之后，采用「覆盖式增强」：
+   只使用 transform / opacity / filter / box-shadow / translate，
+   不改任何布局属性（宽高、display、position 保持原样）
+   ============================================================ */
+
+/* ---------------- 1. 设计令牌 ---------------- */
+:root {
+  --persp: 1000px;                       /* 卡片级透视距离 */
+  --persp-scene: 2600px;                 /* 整个界面的透视距离 */
+  --spring: cubic-bezier(.2, 1.18, .3, 1);
+  --spring-soft: cubic-bezier(.16, 1, .3, 1);
+
+  --tilt-rx: 0deg;                       /* 指针倾斜（由 motion.js 写入） */
+  --tilt-ry: 0deg;
+  --mx: 50%;                             /* 指针在元素内的百分比位置（高光用） */
+  --my: 50%;
+  --px: 0;                               /* 指针在视口内的归一化位移 -1 ~ 1 */
+  --py: 0;
+  --cx: -9999px;                         /* 指针像素坐标（跟随光晕） */
+  --cy: -9999px;
+
+  --app-rx: 0deg;                        /* 界面整体倾斜 */
+  --app-ry: 0deg;
+
+  --glow-a: color-mix(in srgb, var(--accent) 65%, transparent);
+  --glow-b: color-mix(in srgb, var(--accent-2) 55%, transparent);
+}
+
+/* ---------------- 2. 背景视差光球 ----------------
+   三层不同深度的光球，随指针反向位移，制造真实景深。
+   注意：光球以前用 filter: blur(72px) 做柔边，三个 40~52vw 的大圆
+   每帧都要重算一次高斯模糊 —— 这是帧率的主要杀手之一。
+   现在柔边交给 radial-gradient 自身的透明度衰减，并去掉 will-change
+   （常驻层加 will-change 会让图层永久占着显存，反而越用越慢）。 */
+.fx { position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; contain: strict; }
+.fx__layer { position: absolute; inset: -12%; transition: transform .7s var(--spring-soft); }
+.fx__layer--a { transform: translate3d(calc(var(--px) * 34px), calc(var(--py) * 22px), 0); }
+.fx__layer--b { transform: translate3d(calc(var(--px) * -26px), calc(var(--py) * -16px), 0); }
+.fx__layer--c { transform: translate3d(calc(var(--px) * 16px), calc(var(--py) * -30px), 0); }
+
+.fx__orb { position: absolute; border-radius: 50%; }
+.fx__orb--1 {
+  width: 60vw; height: 60vw; left: -16vw; top: -20vw;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--accent) 26%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 15%, transparent) 34%,
+    transparent 70%);
+  animation: orbA 24s ease-in-out infinite;
+}
+.fx__orb--2 {
+  width: 54vw; height: 54vw; right: -18vw; top: 2vw;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--accent-2) 24%, transparent) 0%,
+    color-mix(in srgb, var(--accent-2) 13%, transparent) 36%,
+    transparent 72%);
+  animation: orbB 29s ease-in-out infinite;
+}
+.fx__orb--3 {
+  width: 66vw; height: 66vw; left: 12vw; bottom: -32vw;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--accent) 20%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 10%, transparent) 34%,
+    transparent 72%);
+  animation: orbC 34s ease-in-out infinite;
+}
+@keyframes orbA {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6vw, 5vh, 0) scale(1.14); }
+}
+@keyframes orbB {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06); }
+  50% { transform: translate3d(-7vw, 8vh, 0) scale(.9); }
+}
+@keyframes orbC {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(.95); }
+  50% { transform: translate3d(4vw, -7vh, 0) scale(1.16); }
+}
+html[data-theme="dark"] .fx { opacity: .62; }
+html[data-theme="light"] .fx { opacity: .42; }
+
+/* 指针跟随光晕 */
+.fx__cursor {
+  position: absolute; left: 0; top: 0; width: 560px; height: 560px; margin: -280px 0 0 -280px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%);
+  transform: translate3d(var(--cx), var(--cy), 0);
+  transition: transform .22s linear, opacity .4s var(--ease);
+  opacity: 0;
+}
+.fx.is-live .fx__cursor { opacity: 1; }
+
+/* ---------------- 3. 界面整体 3D 场景 ---------------- */
+.app {
+  perspective: var(--persp-scene);
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--app-rx)) rotateY(var(--app-ry));
+  transition: transform .5s var(--spring-soft);
+}
+/* 三列处于不同景深；用 scale 抵消透视缩放，保证视觉尺寸不变、只保留视差 */
+.app.is-3d .rail  { transform: translate3d(0, 0, -42px) scale(1.01615); }
+.app.is-3d .side  { transform: translate3d(0, 0, -12px) scale(1.00462); }
+.app.is-3d .main  { transform: translate3d(0, 0,  26px) scale(0.99000); }
+.app.is-3d .rail,
+.app.is-3d .side,
+.app.is-3d .main { transition: transform .5s var(--spring-soft); }
+
+/* ---------------- 4. 卡片 / 列表项 3D 浮起 ----------------
+   用 perspective() 内联函数，无需祖先透视，不会影响布局 */
+.conv, .result-card, .moment, .card, .list-item, .contact-item,
+.member-cell, .device-card, .setting-row, .stat, .sticker-cell,
+.emoji-panel__cell, .moment__media-item, .contact-section, .chip,
+.privacy-card, .table, .search-group__list > * {
+  transition: transform .34s var(--spring), box-shadow .34s var(--ease),
+              background .2s var(--ease), border-color .2s var(--ease);
+}
+/* 「浮起」只用阴影表达，不做 3D 位移与旋转。
+   原因很实际：列表里每一项 hover 都上移 3px 并旋转，鼠标停在某一项边缘就会
+   反复进出 —— 整片列表跟着抖，用户看到的就是「界面老在闪」；
+   旋转还会让命中区跟着变形，边缘处按下去容易落空。
+   视觉上的层次感靠 box-shadow 的深浅就够了。 */
+.conv:hover, .result-card:hover, .card:hover, .list-item:hover,
+.contact-item:hover, .member-cell:hover, .device-card:hover,
+.setting-row:hover, .stat:hover, .sticker-cell:hover,
+.contact-section:hover, .search-group__list > *:hover {
+  box-shadow: var(--shadow-3);
+}
+.moment:hover {
+  box-shadow: var(--shadow-3);
+}
+/* 只放大不位移：中心放大，命中区只增不减，不会把鼠标甩出去 */
+.moment__media-item:hover, .emoji-panel__cell:hover, .chip:hover {
+  transform: scale(1.03);
+  box-shadow: var(--shadow-2);
+}
+
+/* 入场动画结束后不再「保持」transform，否则会盖掉上面的 hover 3D 变换 */
+.moment, .conv, .result-card, .list-item, .contact-item, .member-cell,
+.device-card, .setting-row, .stat, .card, .sticker-cell,
+.moment__media-item, .side__body > * {
+  animation-fill-mode: backwards;
+}
+
+/* 当前会话：向前推一层 */
+.conv.is-active {
+  transform: perspective(var(--persp)) translate3d(4px, 0, 18px);
+  box-shadow: var(--shadow-2);
+}
+
+/* ---------------- 5. 指针倾斜 + 镜面高光 ---------------- */
+[data-tilt] { transform-style: preserve-3d; }
+.modal {
+  transform: translate(-50%, -50%) perspective(1200px)
+             rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry));
+  transition: transform .25s var(--spring-soft), translate .22s var(--ease-out);
+}
+.sheet {
+  transform: translateX(-50%) perspective(1000px)
+             rotateX(calc(var(--tilt-rx) * .5)) rotateY(calc(var(--tilt-ry) * .5));
+}
+.auth__panel {
+  transform: perspective(1300px)
+             rotateX(calc(var(--tilt-rx, 0deg) + var(--rx, 0deg)))
+             rotateY(calc(var(--tilt-ry, 0deg) + var(--ry, 0deg)));
+  transition: transform .3s var(--spring-soft);
+}
+.modal.is-dragging, .sheet.is-dragging { transition: none; }
+
+/* 高光层挂在目标元素「之后」的固定定位兄弟节点上：
+   不进入文档流、不影响滚动高度，也不会被 overflow 裁切 */
+.tilt-sheen {
+  position: fixed; left: 0; top: 0; width: 0; height: 0;
+  pointer-events: none; z-index: 260;
+  background: radial-gradient(440px circle at var(--mx) var(--my),
+              rgba(255, 255, 255, .16), rgba(255, 255, 255, .04) 42%, transparent 68%);
+  opacity: 0; transition: opacity .35s var(--ease);
+  mix-blend-mode: soft-light;
+}
+html[data-theme="light"] .tilt-sheen {
+  background: radial-gradient(440px circle at var(--mx) var(--my),
+              color-mix(in srgb, var(--accent) 18%, transparent), transparent 66%);
+  mix-blend-mode: normal;
+}
+.tilt-sheen.is-on { opacity: 1; }
+
+/* ---------------- 6. 入场 / 切换 3D 动画 ---------------- */
+@keyframes sheetIn3d {
+  from { opacity: 0; transform: translateX(-50%) perspective(900px) translate3d(0, 30px, -60px) rotateX(9deg); }
+  to   { opacity: 1; transform: translateX(-50%) perspective(900px) translate3d(0, 0, 0) rotateX(0); }
+}
+.sheet { animation: sheetIn3d .36s var(--spring) backwards; }
+
+@keyframes modalIn3d {
+  from { opacity: 0; transform: translate(-50%, -50%) perspective(1200px) scale(.92) translate3d(0, 26px, -140px) rotateX(10deg); }
+  to   { opacity: 1; transform: translate(-50%, -50%) perspective(1200px) scale(1) translate3d(0, 0, 0) rotateX(0); }
+}
+.modal { animation: modalIn3d .4s var(--spring) backwards; }
+
+@keyframes viewIn3d {
+  from { opacity: 0; transform: perspective(1500px) rotateY(-5deg) translate3d(0, 26px, -160px) scale(.985); }
+  to   { opacity: 1; transform: perspective(1500px) rotateY(0) translate3d(0, 0, 0) scale(1); }
+}
+#stage > .view { animation: viewIn3d .46s var(--spring) backwards; }
+
+@keyframes toastIn3d {
+  from { opacity: 0; transform: perspective(800px) translate3d(0, -20px, -80px) rotateX(-12deg) scale(.94); }
+  to   { opacity: 1; transform: perspective(800px) translate3d(0, 0, 0) rotateX(0) scale(1); }
+}
+.toast { animation: toastIn3d .38s var(--spring) backwards; }
+
+/* 列表逐条 3D 编排（--i 由 motion.js 写入） */
+@keyframes stagger3d {
+  from { opacity: 0; transform: perspective(1200px) translate3d(0, 20px, -70px) rotateX(7deg); }
+  to   { opacity: 1; transform: perspective(1200px) translate3d(0, 0, 0) rotateX(0); }
+}
+.side__body > *, .search-group__list > *, .contact-section,
+.moments > .moment, .conv-list > * {
+  animation: stagger3d .42s var(--spring) backwards;
+  animation-delay: calc(var(--i, 0) * 34ms);
+}
+
+/* 乐观渲染：发送中 / 发送失败的状态反馈 */
+.msg.is-pending > .msg__col > .msg__bubble { opacity: .62; }
+.msg.is-pending > .msg__col > .msg__meta { opacity: .7; }
+.msg.is-pending > .msg__col > .msg__meta::after {
+  content: '发送中…'; margin-left: 6px; font-size: 10.5px; color: var(--muted);
+}
+.msg.is-failed > .msg__col > .msg__bubble {
+  opacity: .8;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 70%, transparent);
+}
+
+.msg__retry {
+  display: flex; align-items: center; gap: 8px; margin-top: 4px;
+  font-size: 11.5px;
+}
+.msg__retry-tip { color: var(--danger); }
+.msg__retry-btn {
+  border: 1px solid var(--line-2); background: transparent; color: var(--text-2);
+  border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease);
+}
+.msg__retry-btn:hover { background: var(--panel-2); color: var(--text); border-color: var(--accent); }
+.msg__retry-btn.is-danger:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ---------------- 7. 消息气泡 3D ---------------- */
+.msg__bubble {
+  transition: transform .3s var(--spring), box-shadow .3s var(--ease);
+  transform: perspective(760px) translate3d(0, 0, 0);
+}
+/* hover 只加阴影，绝不移动气泡：
+   气泡一旦在 hover 时位移/旋转，鼠标停在气泡（或气泡内按钮）边缘就会反复进出
+   hover 态 —— 视觉上「一直闪」，点击时按钮还在动，点下去是空的。 */
+.msg:hover .msg__bubble { box-shadow: var(--shadow-2); }
+.msg--me .msg__bubble { transform-origin: 100% 50%; }
+.msg:not(.msg--me) .msg__bubble { transform-origin: 0 50%; }
+
+/* ---------------- 8. 按钮：3D 按压 + 涟漪 ---------------- */
+.btn {
+  position: relative; overflow: hidden;
+  transition: transform .22s var(--spring), background .2s var(--ease),
+              color .2s var(--ease), box-shadow .24s var(--ease),
+              border-color .2s var(--ease), opacity .2s var(--ease);
+}
+/* 按钮 hover / active 一律不移动自身：位移会让按钮从鼠标底下溜走，
+   边缘处反复进出 hover（闪烁），按下与抬起之间按钮一缩，click 直接丢失。
+   抬升感改用阴影与亮度表达。 */
+.btn:hover { box-shadow: var(--shadow-2); }
+.btn:active { box-shadow: var(--shadow-1); filter: brightness(.94); }
+.btn--primary:hover { box-shadow: 0 16px 34px color-mix(in srgb, var(--accent) 42%, transparent); }
+
+.ripple {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 4;
+  background: radial-gradient(circle, rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 68%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: rippleOut .58s var(--ease-out) forwards;
+}
+@keyframes rippleOut {
+  from { transform: translate(-50%, -50%) scale(0); opacity: .9; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* ---------------- 9. 左侧导航 3D 推出 ---------------- */
+.rail__btn {
+  transition: transform .32s var(--spring), background .2s var(--ease), color .2s var(--ease);
+}
+.rail__btn:hover { box-shadow: var(--shadow-1); }
+.rail__btn.is-active {
+  transform: perspective(620px) translate3d(3px, 0, 16px);
+}
+.rail__logo {
+  transition: transform .45s var(--spring), box-shadow .3s var(--ease);
+}
+.rail__logo:hover { box-shadow: var(--shadow-2); }
+
+/* ---------------- 10. 头像 / 输入框 ---------------- */
+.avatar { transition: transform .32s var(--spring), box-shadow .3s var(--ease); }
+/* scale 以中心放大，命中区只增不减，不会抖 */
+.avatar:hover { transform: scale(1.06); box-shadow: var(--shadow-2); }
+
+.composer {
+  transition: transform .3s var(--spring), box-shadow .3s var(--ease), border-color .2s var(--ease);
+}
+/* 聚焦只给光影反馈，不位移：点一下输入区整块往上跳，看着就是「界面在闪」，
+   而且位移会让输入框边缘的命中区跟着跑，鼠标容易脱手。 */
+.composer:focus-within {
+  box-shadow: var(--shadow-2);
+}
+.input { transition: transform .2s var(--spring), border-color .2s, box-shadow .2s, background .2s; }
+/* .input:focus 的边框色与外发光在 components.css 已经给足，这里不要再加位移 */
+
+/* 图标按钮：轻微浮起并带 3D 旋转 */
+.icon-btn { transition: transform .26s var(--spring), background .2s var(--ease), color .2s var(--ease); }
+.icon-btn:hover { box-shadow: var(--shadow-1); }
+.icon-btn:active { filter: brightness(.92); }
+
+/* ---------------- 11. 动态 / 卡片内部层次 ---------------- */
+/* 列表空状态引导卡（通讯录好友/群聊为空时） */
+.empty-mini {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 14px 16px; margin: 2px;
+  border: 1px dashed var(--line-2); border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+.empty-mini__row { display: flex; gap: 8px; }
+
+/* 发布/评论里本地媒体的上传状态角标 */
+.media-badge {
+  position: absolute; left: 4px; bottom: 4px; right: 4px;
+  padding: 3px 6px; border-radius: 8px;
+  font-size: 10.5px; line-height: 1.4; text-align: center;
+  color: #fff; background: rgba(0, 0, 0, .58);
+  backdrop-filter: blur(4px); pointer-events: none;
+  transition: background .2s var(--ease);
+}
+.media-badge.is-ok { background: color-mix(in srgb, var(--ok) 72%, rgba(0, 0, 0, .5)); }
+.media-badge.is-err { background: color-mix(in srgb, var(--danger) 78%, rgba(0, 0, 0, .5)); }
+
+.moment__media-item { transform-style: preserve-3d; }
+.moment__media-item img, .moment__media-item video { transition: transform .5s var(--spring-soft); }
+.moment__media-item:hover img, .moment__media-item:hover video { transform: scale(1.06); }
+
+.avatar__status.is-online { animation: onlinePulse 2.4s ease-in-out infinite; }
+@keyframes onlinePulse {
+  0%, 100% { box-shadow: 0 0 0 2.5px var(--bg-2), 0 0 8px 0 color-mix(in srgb, var(--ok) 60%, transparent); }
+  50% { box-shadow: 0 0 0 2.5px var(--bg-2), 0 0 16px 3px color-mix(in srgb, var(--ok) 85%, transparent); }
+}
+
+/* 设置面板：切换时 3D 翻入 */
+.settings__pane { animation: paneIn3d .42s var(--spring) backwards; }
+@keyframes paneIn3d {
+  from { opacity: 0; transform: perspective(1300px) rotateY(4deg) translate3d(0, 18px, -90px); }
+  to   { opacity: 1; transform: perspective(1300px) rotateY(0) translate3d(0, 0, 0); }
+}
+
+/* ---------------- 12. 无障碍：尊重系统的「减少动效」 ---------------- */
+@media (prefers-reduced-motion: reduce) {
+  .app { transform: none !important; perspective: none; }
+  .app.is-3d .rail, .app.is-3d .side, .app.is-3d .main { transform: none; }
+  .fx { display: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

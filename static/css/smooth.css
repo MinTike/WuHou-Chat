@@ -1,0 +1,45 @@
+/* ============================================================
+   丝滑层：全局微交互与动效打磨（增量，不覆盖既有动画）
+   对 prefers-reduced-motion 全部让路
+   ============================================================ */
+
+/* 文本选择 / 键盘焦点环 */
+::selection { background: color-mix(in srgb, var(--accent) 34%, transparent); }
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px; border-radius: 8px;
+}
+
+/* 会话行 / 联系人行：hover 轻移 + 按下回弹 */
+.conv, .contact-item {
+  transition: background .2s var(--ease), transform .22s var(--ease-out);
+}
+.conv:hover, .contact-item:hover { background: var(--panel-2); }
+.conv:active, .contact-item:active { filter: brightness(.96); }
+
+/* 导航栏按钮：按下微缩 */
+.rail__btn { transition: transform .18s var(--ease-out), background .2s var(--ease), color .2s var(--ease); }
+.rail__btn:active { filter: brightness(.92); }
+
+/* 气泡按压反馈 */
+.msg__bubble:active { filter: brightness(.97); }
+
+/* 媒体淡入，避免解码完成瞬间突兀 */
+.moment__media-item img, .moment__media-item video,
+.moment-card__thumb img, .donate-card__qr img,
+.avatar img { animation: fadeIn .4s var(--ease) both; }
+
+/* 卡片类悬浮统一的呼吸感（已有各自 transition 的不覆盖） */
+.notice-card, .donate-card { transition: transform .22s var(--ease-out), box-shadow .22s var(--ease); }
+.notice-card:hover, .donate-card:hover { box-shadow: var(--shadow-2); }
+
+/* 侧栏分组标题不再抢眼，滚动更连续 */
+.side__body { scroll-behavior: smooth; }
+
+/* 减少动态：全部让路 */
+@media (prefers-reduced-motion: reduce) {
+  .conv, .contact-item, .rail__btn, .msg__bubble,
+  .notice-card, .donate-card { transition: none !important; }
+  .conv:hover, .contact-item:hover { transform: none; }
+  .side__body { scroll-behavior: auto; }
+}

@@ -1,0 +1,323 @@
+/* ============================================================
+   移动端界面系统（专属样式）
+   Copyright © 2026 左熙宇
+   ------------------------------------------------------------
+   这里是「移动端那一套界面」的完整外观：顶栏 / 页面栈 / 底部标签栏 /
+   抽屉 / 底部弹层，以及触摸端的通用体验规则。
+   与旧实现的关键差别：不再出现任何 `.app.is-mobile .side` 之类的补丁
+   —— 电脑端三栏 DOM 在移动端形态下整棵隐藏（#app { display:none }），
+   两套系统互不污染，改一套不会牵动另一套。
+   作用域统一挂在 <html class="is-mobile"> 上（由 formfactor.js 负责）。
+   ============================================================ */
+
+/* -------- 形态标记：电脑端那套 DOM 完全退出舞台 -------- */
+html.is-mobile #app { display: none !important; }
+/* 这三个是移动端布局的地基：不定义的话 var() 解析失败会让整条声明失效
+   （高度 / 内边距直接塌陷成初始值），所以一定在这里给出兜底值。 */
+html.is-mobile {
+  --tab-h: 56px;
+  --bar-h: 52px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --kb: 0px;
+}
+
+/* ============================================================
+   1. App 骨架：顶栏 + 页面栈 + 底部标签栏
+   ============================================================ */
+.mapp {
+  position: fixed; inset: 0; z-index: 1;
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* -------- 顶栏 -------- */
+.mbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  height: calc(var(--bar-h) + var(--safe-t));
+  padding: var(--safe-t) 8px 0;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 78%, transparent);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  z-index: 30;
+}
+.mbar[hidden] { display: none; }
+.mbar__back, .mbar__act {
+  flex: none; width: 38px; height: 38px; border: 0; border-radius: 13px;
+  display: grid; place-items: center; color: var(--text-2); background: none;
+  transition: background .18s var(--ease), color .18s var(--ease), transform .18s var(--spring);
+}
+/* 触摸端同样不缩放：按下时元素缩小，手指抬起的位置可能已经落在元素外，tap 直接丢 */
+.mbar__back:active, .mbar__act:active { background: var(--panel-2); color: var(--accent); }
+.mbar__back[hidden] { display: none; }
+.mbar__title { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 700; letter-spacing: .2px; padding-left: 4px; }
+.mbar__acts { flex: none; display: flex; align-items: center; gap: 2px; }
+
+/* 业务页自带头部时的返回键（聊天页要保留通话按钮，沿用自带头部） */
+.mback {
+  flex: none; width: 34px; height: 34px; margin-right: 2px;
+  border: 0; border-radius: 11px; display: grid; place-items: center;
+  color: var(--text-2); background: none;
+  transition: background .18s var(--ease), transform .18s var(--spring);
+}
+.mback:active { background: var(--panel-2); color: var(--accent); }
+
+/* -------- 页面栈 -------- */
+.mstack { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.mpage {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: var(--bg); overflow: hidden;
+  transition: transform .26s var(--ease-out), opacity .26s var(--ease-out);
+  will-change: transform;
+  box-shadow: 0 0 40px rgba(0, 0, 0, .28);
+}
+.mpage.is-enter { transform: translate3d(100%, 0, 0); }
+.mpage.is-leave { transform: translate3d(100%, 0, 0); }
+.mpage.is-behind { transform: translate3d(-22%, 0, 0); opacity: .55; }
+.mpage.is-pulling { transition: none; transform: translate3d(var(--mx, 0px), 0, 0); }
+.mpage.is-in { animation: mpageIn .26s var(--ease-out) both; }
+.mpage.is-root { box-shadow: none; }
+@keyframes mpageIn { from { opacity: .4; transform: translate3d(6px, 0, 0); } to { opacity: 1; transform: none; } }
+
+/* 页面容器本身不滚：桌面版业务视图都是「定高 + 内部滚动」的设计
+   （聊天页滚 .chat__scroll，列表滚自己的容器），如果让外层也滚，
+   聚焦输入框时浏览器会把整页顶上去，顶栏就被推出屏幕外。 */
+.mpage__scroll {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
+.mpage__side {
+  flex: 0 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 10px 12px 0;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
+.mpage__side[hidden] { display: none; }
+.mpage__body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.mpage__body[hidden] { display: none; }
+/* 业务视图要撑满整页，否则滚动容器会退化成内容高度 */
+.mpage__body > .view, .mpage__body > .chat, .mpage__body > .moments {
+  flex: 1 1 auto; min-height: 0; height: 100%;
+}
+
+/* -------- 底部标签栏 -------- */
+.mtab {
+  flex: 0 0 auto; display: flex; align-items: stretch;
+  height: calc(var(--tab-h) + var(--safe-b));
+  padding: 0 4px env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 74%, transparent);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, .05), 0 -14px 34px rgba(0, 0, 0, .32);
+  transition: transform .28s var(--ease-out), margin-bottom .28s var(--ease-out);
+  z-index: 30;
+}
+/* 让位时不只是"滑出屏幕"，还要把占的那一格收回去：只做 transform 的话
+   56px 的布局空间仍然挂着，二级页底部会留出一条空带（输入区贴不到屏幕底）。 */
+.mtab.is-hidden {
+  transform: translateY(115%);
+  /* 写法用 "0px - x - y" 而不是 "-1 * (x + y)"：后者在部分 Chromium 版本上
+     整条声明会被丢掉，结果标签栏只是滑走、位置还占着。 */
+  margin-bottom: calc(0px - var(--tab-h) - var(--safe-b));
+}
+.mtab__item {
+  position: relative; flex: 1 1 0; min-width: 0; border: 0; background: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--muted); padding: 5px 2px 4px;
+  transition: color .2s var(--ease);
+}
+.mtab__item.is-active { color: var(--accent); }
+.mtab__item:active { opacity: .7; }
+.mtab__ico { display: inline-flex; transition: transform .24s var(--spring); }
+.mtab__item.is-active .mtab__ico { transform: translateY(-1px) scale(1.08); }
+.mtab__item.is-active::before {
+  content: ""; position: absolute; top: 3px; left: 50%; margin-left: -9px;
+  width: 18px; height: 3px; border-radius: 99px;
+  background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: mtabDot .3s var(--spring) both;
+}
+@keyframes mtabDot { from { transform: scaleX(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+.mtab__label { font-size: 10px; letter-spacing: .2px; line-height: 1.1; white-space: nowrap; }
+.mtab__dot {
+  position: absolute; top: -2px; left: 60%; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 99px; background: var(--danger); color: #fff;
+  font-size: 10px; font-style: normal; font-weight: 700; line-height: 16px; text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-2);
+}
+
+/* -------- 右侧抽屉「更多」 -------- */
+.mveil {
+  position: fixed; inset: 0; z-index: 55; background: rgba(0, 0, 0, .45);
+  opacity: 0; pointer-events: none; transition: opacity .2s var(--ease);
+}
+.mveil.is-on { opacity: 1; pointer-events: auto; }
+.mdrawe, .mdrawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 60;
+  width: min(78vw, 300px); display: flex; flex-direction: column; gap: 4px;
+  padding: calc(var(--safe-t) + 14px) 12px calc(var(--safe-b) + 14px);
+  background: var(--panel); border-left: 1px solid var(--line-2);
+  transform: translateX(103%); transition: transform .3s var(--ease-out);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, .4);
+}
+.mdrawe.is-open, .mdrawer.is-open { transform: none; }
+.mdrawe__title, .mdrawer__title { font-size: 12px; color: var(--muted); padding: 0 4px 6px; letter-spacing: 1px; text-transform: uppercase; }
+.mdrawe__item, .mdrawer__item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 13px 14px; border: 0; border-radius: 14px; background: none;
+  color: var(--text); font-size: var(--fs-md); text-align: left;
+  transition: background .18s var(--ease);
+}
+.mdrawe__item:active, .mdrawer__item:active { background: var(--panel-2); }
+.mdrawe__ico, .mdrawer__ico { display: inline-flex; color: var(--accent); }
+
+/* ============================================================
+   2. 触摸端通用体验（与具体页面无关）
+   ============================================================ */
+/* 表单：小于 16px 会触发 iOS 自动缩放，整个页面会被拉宽 */
+html.is-mobile .input, html.is-mobile input.input, html.is-mobile select.input,
+html.is-mobile textarea.input, html.is-mobile .composer textarea { font-size: 16px; }
+
+/* 没有 hover 就别让 hover 态赖着，:active 才是触摸端的反馈 */
+@media (hover: none) {
+  .conv:hover, .contact-item:hover, .result-card:hover, .list-item:hover,
+  .filterbar__chip:hover, .tagchip:hover, .btn:hover, .icon-btn:hover {
+    background: inherit; transform: none; box-shadow: none;
+  }
+  .conv:active, .contact-item:active, .result-card:active, .card:active,
+  .list-item:active, .filterbar__chip:active { background: var(--panel-2); }
+  .btn:active, .icon-btn:active { filter: brightness(.94); }
+  .tagchip:active { filter: brightness(.94); }
+}
+
+/* 滚动：惯性 + 不把滚动传给父容器 */
+html.is-mobile .side__body, html.is-mobile .view__body, html.is-mobile .chat__scroll,
+html.is-mobile .contacts-body, html.is-mobile .modal__body, html.is-mobile .sheet,
+html.is-mobile .auth-card__body, html.is-mobile .settings__pane, html.is-mobile .mpage__scroll {
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
+
+/* 列表项加高：手指的最小可靠命中区 */
+html.is-mobile .conv { padding: 12px 13px; border-radius: 14px; }
+html.is-mobile .conv + .conv { margin-top: 2px; }
+
+/* Toast 避开状态栏 */
+html.is-mobile .toast-root { top: calc(var(--safe-t) + 10px); }
+
+/* 根页已经有标准顶栏写着标题了，业务页自带的头部（通讯录 / 动态 / 设置都有）
+   会再重复一遍，收掉。二级页才让自带头部出场（聊天页要留通话按钮）。 */
+html.is-mobile .mpage.is-root .view__head { display: none; }
+
+/* 业务页自带头部要避开刘海（页面栈里它们就是顶栏） */
+html.is-mobile .mpage .chat__head, html.is-mobile .mpage .view__head {
+  padding-top: calc(var(--safe-t) + 4px);
+  height: calc(58px + var(--safe-t)); flex: 0 0 calc(58px + var(--safe-t));
+}
+html.is-mobile .chat__head { padding-left: 4px; padding-right: 8px; gap: 8px; }
+html.is-mobile .chat__peer-name { font-size: var(--fs-md); }
+html.is-mobile .chat__scroll { padding: 14px 12px 8px; }
+html.is-mobile .msg { max-width: 84%; margin-bottom: 9px; }
+/* premium.css 把输入区做成了「浮动卡片」（左右内缩 16px + 底部留 14px + 圆角）。
+   移动端输入区应该是贴着屏幕底的通栏，那套外观要整套覆盖掉 ——
+   只改 padding 的话，14px 的下外边距会让输入区悬在屏幕底上方一条缝。 */
+html.is-mobile .composer {
+  padding: 8px 10px calc(8px + var(--kb));
+  margin: 0; border-radius: 0;
+  border-left: 0; border-right: 0; border-bottom: 0;
+}
+html.is-mobile .composer textarea { max-height: 132px; padding: 9px 12px; }
+html.is-mobile .composer__send { height: 40px; padding: 0 14px; }
+html.is-mobile .composer__hint { display: none; }
+
+/* 单列铺满 */
+html.is-mobile .contact-grid { grid-template-columns: 1fr; }
+html.is-mobile .kv { grid-template-columns: 78px 1fr; }
+html.is-mobile .card-actions { grid-template-columns: 1fr; }
+html.is-mobile .view__title { font-size: var(--fs-md); }
+html.is-mobile .empty { padding: 28px 20px; }
+html.is-mobile .side__body { padding: 0 10px 12px; }
+
+/* ============================================================
+   3. 弹层：一律底部抽屉 + 下拉关闭
+   ============================================================ */
+html.is-mobile .modal {
+  position: absolute; top: auto; bottom: 0; left: 0; right: 0;
+  width: 100%; max-width: none; max-height: 90dvh;
+  transform: none; translate: var(--dx, 0px) var(--dy, 0px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 26px 26px 0 0; border-bottom: none;
+  border-top: 1px solid var(--line-2);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, .5);
+  animation: mSheetUp .38s var(--spring) both;
+}
+html.is-mobile .modal.is-dragging { transition: none; }
+html.is-mobile .modal__head {
+  flex: 0 0 auto; cursor: default; touch-action: none;
+  padding: 20px 18px 12px; position: relative;
+}
+html.is-mobile .modal__head::before {
+  content: ""; position: absolute; top: 8px; left: 50%; margin-left: -19px;
+  width: 38px; height: 4px; border-radius: 99px; background: var(--line-2);
+}
+html.is-mobile .modal__title { font-size: var(--fs-lg); }
+html.is-mobile .modal__body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 18px 14px;
+}
+html.is-mobile .modal__foot {
+  flex: 0 0 auto; position: static;
+  padding: 10px 18px calc(14px + var(--safe-b));
+  border-top: 1px solid var(--line); box-shadow: 0 -12px 24px rgba(0, 0, 0, .18);
+}
+html.is-mobile .modal__foot .btn { height: 46px; font-size: var(--fs-md); }
+
+html.is-mobile .sheet {
+  left: 0; right: 0; bottom: 0; width: 100%; max-width: none; transform: none;
+  border-radius: 26px 26px 0 0; border-bottom: none;
+  padding: 10px 10px calc(10px + var(--safe-b));
+  display: flex; flex-direction: column; gap: 2px;
+  animation: mSheetUp .34s var(--spring) both;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, .5);
+}
+html.is-mobile .sheet__item { padding: 15px 16px; border-radius: 15px; font-size: var(--fs-md); gap: 14px; }
+html.is-mobile .sheet__item:last-child { margin-top: 4px; color: var(--muted); }
+
+/* 右键菜单在手机上由长按触发，本身也贴底弹出 */
+html.is-mobile .ctx {
+  position: fixed; left: 0 !important; right: 0; top: auto !important; bottom: 0;
+  width: 100%; min-width: 0; max-width: none;
+  padding: 10px 10px calc(10px + var(--safe-b));
+  border-radius: 26px 26px 0 0; border-bottom: none;
+  display: flex; flex-direction: column; gap: 2px;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, .5);
+  animation: mSheetUp .28s var(--spring) both;
+}
+html.is-mobile .ctx__item { padding: 14px 15px; border-radius: 14px; font-size: var(--fs-md); gap: 12px; }
+
+@keyframes mSheetUp { from { transform: translate3d(0, 102%, 0); } to { transform: none; } }
+
+/* 拖拽中的临时类 */
+.is-pulling { touch-action: none; }
+.is-pulling * { user-select: none; }
+
+/* ============================================================
+   4. 认证页（移动端形态：卡片铺满，品牌舞台收起）
+   ============================================================ */
+html.is-mobile .auth { height: 100vh; height: 100dvh; padding: calc(var(--safe-t) + 12px) 12px calc(var(--safe-b) + 12px); }
+html.is-mobile .auth-card { width: 100%; max-height: calc(100dvh - 24px); }
+html.is-mobile .auth-card__body { max-height: calc(100dvh - 150px); overflow-y: auto; }
+html.is-mobile .auth__showcase--hero { display: none; }
+html.is-mobile .grid-2, html.is-mobile .grid-3 { grid-template-columns: 1fr; }
+html.is-mobile .form { gap: 11px; }
+html.is-mobile .btn { height: 46px; }
+
+/* ============================================================
+   5. 软键盘弹起：底部标签栏让位，输入区贴着键盘
+   ============================================================ */
+body.is-kb .mtab {
+  transform: translateY(115%);
+  margin-bottom: calc(0px - var(--tab-h) - var(--safe-b));
+}
+body.is-kb .toast-root { top: calc(var(--safe-t) + 4px); }
