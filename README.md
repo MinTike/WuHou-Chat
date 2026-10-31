@@ -3,7 +3,7 @@
 > 武侯Chat（WuHou Chat）前端界面框架 + 后端脚手架。
 > 本项目仅包含**框架代码**，不含任何业务核心逻辑与生产密钥，可安全公开与二次开发。
 >
-> © 2026 左熙宇 · 保留所有权利。本仓库以框架形式开放，用于学习与二次开发。
+> © 2026 左熙宇 · 本仓库采用 **Apache License 2.0** 开源，详见 [LICENSE](./LICENSE)。
 
 ---
 
@@ -75,4 +75,22 @@ python run.py --http 8000 --ws 8001
 
 ## License
 
-本仓库为框架示例，保留所有权利。未经许可不得用于闭源商用分发。
+本仓库采用 **Apache License 2.0** 开源。
+
+```
+Copyright © 2026 左熙宇（MinTike）
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+完整许可文本见 [LICENSE](./LICENSE)。
