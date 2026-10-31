@@ -194,4 +194,4 @@ if not result.ok:
 
 ---
 
-*审计人：AI 安全审计 · 项目：武侯Chat Free（版权 © 2026 左熙宇）*
+*审计人：Kimi K3.1 Pro · 项目：武侯Chat Free（版权 © 2026 左熙宇）*
